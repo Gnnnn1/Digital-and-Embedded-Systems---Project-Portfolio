@@ -238,31 +238,30 @@ The same counter and display modules are reused, demonstrating modular design an
 
 All project source files and constraints are available in the GitHub repository.
 
-**[View Mini-Project 2 Source Files](https://github.com/Gnnnn1/Digital-and-Embedded-Systems---Project-Portfolio/tree/bc551c73ccf47d49e8a5a5f1df3787ecc5566c0b/code/mp2)**
+**[View Mini-Project 2 Source Files](https://github.com/Gnnnn1/Digital-and-Embedded-Systems---Project-Portfolio/tree/main/code/mp2)**
 
 **Part I — Automatic Counter**
 
 | File | Description |
 |---|---|
-| `clk_div.vhd` | Configurable frequency divider |
-| `modMCounter.vhd` | Generic modulo-M counter |
-| `hex_7seg.vhd` | Hexadecimal-to-seven-segment decoder |
-| `count_display.vhd` | Top-level structural design |
-| `clk_div_tb.vhd` | Clock divider testbench |
-| `modMCounter_tb.vhd` | Counter testbench |
-| `count_display_tb.vhd` | Integrated design testbench |
-| `lab7.xdc` | Basys3 pin constraints |
+| [clk_div.vhd](../code/mp2/Part1/clk_div.vhd) | Configurable frequency divider |
+| [modMcounter.vhd](../code/mp2/Part1/modMcounter.vhd) | Generic modulo-M counter |
+| [hex_7seg.vhd](../code/mp2/Part1/hex_7seg.vhd) | Hexadecimal-to-seven-segment decoder |
+| [count_display.vhd](../code/mp2/Part1/count_display.vhd) | Top-level structural design |
+| [lab7.xdc](../code/mp2/Part1/lab7.xdc) | Basys3 pin constraints |
 
 **Part II — Button Event Counter**
 
 | File | Description |
 |---|---|
-| `button_debounce.vhd` | Provided button debounce module |
-| `modMCounter.vhd` | Reused four-bit counter |
-| `hex_7seg.vhd` | Reused seven-segment decoder |
-| `count_display.vhd` | Modified button-controlled top-level design |
-| `count_display_tb.vhd` | Button event simulation testbench |
-| `lab7.xdc` | Updated button and display constraints |
+| [button_debounce.vhd](../code/mp2/Part2/button_debounce.vhd) | Provided button debounce module |
+| [clk_div.vhd](../code/mp2/Part2/clk_div.vhd) | Clock divider source retained from Part I; unused in Part II top-level |
+| [modMcounter.vhd](../code/mp2/Part2/modMcounter.vhd) | Reused four-bit counter |
+| [hex_7seg.vhd](../code/mp2/Part2/hex_7seg.vhd) | Reused seven-segment decoder |
+| [count_display.vhd](../code/mp2/Part2/count_display.vhd) | Modified button-controlled top-level design |
+| [lab7.xdc](../code/mp2/Part2/lab7.xdc) | Updated button and display constraints |
+
+**Testbenches:** `clk_div_tb.vhd`, `modMCounter_tb.vhd`, and `count_display_tb.vhd` were used for simulation. They were not present in the uploaded-folder screenshots and should be added to the repository before direct links can be provided.
 
 ## 4. Simulation
 
@@ -278,6 +277,8 @@ The initial waveform showed a constant output because the observation interval w
 
 ![Clock Divider Simulation](../code/mp2/Part1/clk_div_waveform.jpg)
 
+*Figure 1. Clock divider simulation waveform.*
+
 ### 4.2 Modulo-16 Counter Simulation
 
 The four-bit counter was tested using a 10 ns input clock period.
@@ -287,6 +288,8 @@ The simulation showed the binary count incrementing sequentially and wrapping ar
 **Result:** The counter demonstrated the required modulo-16 operation.
 
 ![Modulo-16 Counter Simulation](../code/mp2/Part1/modMcounter_waveform.jpg)
+
+*Figure 2. Modulo-16 counter simulation waveform.*
 
 
 ### 4.3 Part I Top-Level Simulation
@@ -305,7 +308,9 @@ The waveform showed the count, LED outputs, and seven-segment decoder changing t
 
 **Result:** The automatic counter and display modules operated as expected for the observed values.
 
-[Insert Part I top-level simulation screenshot]
+![Part I Top-Level Simulation](../code/mp2/Part1/slowclkwaveform.jpg)
+
+*Figure 3. Part I top-level waveform showing the divided clock, counter, LEDs, and display outputs.*
 
 ### 4.4 Part II Button Event Simulation
 
@@ -330,7 +335,7 @@ The display also updated correctly with each count.
 
 **Result:** The integrated button-controlled counter demonstrated the required event-counting functionality.
 
-[Insert Part II simulation screenshot]
+**Part II simulation screenshot:** Image not yet present in the shown GitHub `Part2` folder.
 
 ### 4.5 Simulation Troubleshooting
 
@@ -356,9 +361,11 @@ In Part II, the button debounce module replaces the clock divider, and its outpu
 
 The counter output connects to both the LEDs and hexadecimal decoder.
 
-[Insert Part I elaborated schematic]
+![Part I Elaborated Schematic](../code/mp2/Part1/count_display_schematic.jpg)
 
-[Insert Part II elaborated schematic]
+*Figure 4. Elaborated design schematic for the automatic counter.*
+
+**Part II elaborated schematic:** Image not yet present in the shown GitHub `Part2` folder.
 
 ### 5.2 Synthesized Design
 
@@ -368,7 +375,11 @@ The synthesized schematic includes input buffers, a global clock buffer, counter
 
 The schematic confirmed that the intended module connections were retained through synthesis.
 
-[Insert synthesized schematic screenshot]
+![Part I Synthesized Schematic](../code/mp2/Part1/synthesized_schematic.jpg)
+
+*Figure 5. Synthesized design schematic for the automatic counter.*
+
+**Part II synthesized schematic:** Image not yet present in the shown GitHub `Part2` folder.
 
 ### 5.3 Implementation
 
@@ -376,7 +387,7 @@ After synthesis, the design was processed through FPGA implementation.
 
 The Vivado Device view was used to inspect the placement of the design within the Artix-7 FPGA fabric.
 
-[Insert FPGA implementation screenshot]
+**Implementation screenshot:** Image not yet present in the shown GitHub folders.
 
 ### 5.4 Resource Utilization
 
@@ -389,7 +400,7 @@ The implemented design uses FPGA resources for the counter, input synchronizatio
 | Bonded IOBs | TBD | TBD |
 | Global Clock Buffers | TBD | TBD |
 
-[Insert Vivado utilization report]
+**Utilization report:** Screenshot and numeric values not yet available in the shown GitHub folders.
 
 ### 5.5 Hardware Testing
 
@@ -415,7 +426,7 @@ The counter automatically increments from 0 to F, while the rightmost seven-segm
 | Wraparound | F returns to 0 | To be recorded |
 | Reset | Counter returns to 0 | To be recorded |
 
-[Insert photograph or video of FPGA hardware testing]
+**Hardware testing photo/video:** Not yet present in the shown GitHub folders.
 
 ## 6. Reflection
 
