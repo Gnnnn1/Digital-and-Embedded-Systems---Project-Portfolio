@@ -133,17 +133,17 @@ The waveform displays `q[3:0]` as decimal values **0, 1, 2, 4, and 8**, correspo
 
 The elaborated design shows the FSM state register, direction-dependent next-state logic, multiplexers, and output decoding. This verifies that the VHDL is structurally interpreted as a state-based digital controller.
 
-**Top-level controller elaboration:** *[Add a screenshot after integrating `clk_div` and `Stepper_Controller`.]*
+**Top-level controller elaboration:** *[screenshot after integrating `clk_div` and `Stepper_Controller`.]*
 
 ### Synthesized design
 
-*[Add a synthesized schematic screenshot after running Synthesis. Discuss the flip-flops, clock-divider counter, and combinational state/output logic.]*
+*[synthesized schematic screenshot after running Synthesis.]*
 
 ### Implementation
 
 The supplied XDC file assigns the FPGA clock, direction switch, enable switch, reset button, and four PMOD JA pins. Timing and implementation results remain to be documented after building the full top-level controller.
 
-*[Add implementation status, timing results, and any warnings here.]*
+*[implementation status, timing results, and any warnings here.]*
 
 ### Resource utilization
 
@@ -172,7 +172,7 @@ The intended Basys3 controls and motor-driver connections are:
 
 Expected behavior: enabling the controller produces a stepping sequence, changing `dir` reverses it, and disabling the controller de-energizes the coils once the FSM enters S0. The motor must be driven through the ULN2003 rather than directly from FPGA pins.
 
-**Actual FPGA/motor results:** *[Add observations and a photograph after programming and testing the board.]*
+**Actual FPGA/motor results:** *[observations and a photo]*
 
 ## 6. Reflection
 
