@@ -527,5 +527,3 @@ From this project, I learned how to:
 This project relates directly to digital-design concepts covered in the course, including Boolean algebra, truth tables, combinational logic, logic gates, simulation, synthesis, and FPGA implementation.
 
 Overall, the project demonstrated the complete FPGA design process from a written specification to a working hardware implementation.
-
-You mainly need to replace the `[Link]`, `[Insert screenshot...]`, and resource-utilization placeholders with your own files and Vivado screenshots.********
