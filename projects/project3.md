@@ -249,18 +249,8 @@ The four FPGA outputs are intended to connect to the **ULN2003 motor driver**, r
 
 The design has been elaborated and synthesized, and the corresponding schematic screenshots are shown above. **Final implementation or bitstream-generation results have not been documented in the repository materials shown here.** Those results should be added after checking the Vivado implementation status, timing summary, and bitstream generation.
 
-### 5.6 Resource utilization
 
-The synthesized schematic is available, but the resource-utilization report values were not provided. Reported LUT, flip-flop, and other resource counts should be copied from **Vivado → Open Synthesized Design → Report Utilization** rather than estimated.
-
-| Resource | Utilization |
-|---|---|
-| LUTs | To be recorded from Vivado |
-| Flip-flops | To be recorded from Vivado |
-| BUFG/clock buffers | To be recorded from Vivado |
-| I/O pins | To be recorded from Vivado |
-
-### 5.7 Physical FPGA testing — Pending
+### 5.6 Physical FPGA testing — Pending
 
 **Hardware testing has not yet been completed/documented.** After programming the Basys3 and connecting the motor driver, the following scenarios will be tested:
 
