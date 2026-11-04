@@ -5,6 +5,20 @@ title: "Project 2: Event Counter"
 
 # Project 2: Event Counter
 
+### Hardware Demonstration
+
+**Video 1:**
+
+<video width="100%" controls>
+  <source src="../code/mp2/Part2/demonstration1.mp4" type="video/mp4">
+</video>
+
+**Video 2:**
+
+<video width="100%" controls>
+  <source src="../code/mp2/Part2/demonstration2.mp4" type="video/mp4">
+</video>
+
 ## 1. Introduction
 
 This project involves designing and implementing a 4-bit modulo-16 counter using VHDL on the Digilent Basys3 FPGA board. The project consists of two stages: an automatic counter and a button-controlled event counter.
