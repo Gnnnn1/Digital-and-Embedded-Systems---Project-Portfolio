@@ -7,76 +7,118 @@ title: Project 3
 
 ## 1. Introduction
 
-This project explores the design of a **finite state machine (FSM)** for controlling a four-phase stepper motor using **VHDL and the Basys3 FPGA**. The controller uses **wave-drive mode**, in which only one motor coil is energized at a time. An enable input starts or stops the stepping sequence, while a direction input selects clockwise or counterclockwise rotation.
+This project implements a **finite state machine (FSM) stepper motor controller** in VHDL using the **Digilent Basys3 FPGA** and Xilinx Vivado. The controller generates a four-bit coil-excitation sequence, with user inputs to enable the motor and select its rotation direction.
 
-The objectives are to:
+The project consists of two parts:
 
-- Design a five-state stepper-motor controller (one idle state and four drive states).
-- Verify both directions and the enable function through Vivado behavioral simulation.
-- Integrate the FSM with a clock divider that reduces the Basys3's 100 MHz clock to **500 Hz**.
-- Map the outputs to the Basys3 PMOD JA connector for use with a **ULN2003 motor driver**.
-- Evaluate the synthesized design and test the controller on FPGA hardware.
+- **Part I — FSM design and simulation:** Develop a five-state stepper motor sequencer and verify its state transitions using a VHDL testbench.
+- **Part II — FPGA controller integration:** Connect the FSM to a clock divider, assign the Basys3 pins, and prepare the design to drive a stepper motor through a ULN2003 driver.
+
+The main objectives were to implement a direction-controlled FSM, verify clockwise and counterclockwise output sequences, add enable and reset functions, and integrate a **100 MHz-to-500 Hz clock divider** for FPGA operation.
 
 ## 2. Design
 
-The controller contains two main VHDL modules: a clock divider and a stepper-motor FSM. The divider generates a slower clock so the FSM can change motor-coil outputs at the intended stepping rate. The FSM reads `en` and `dir`, then produces a four-bit output `q[3:0]`.
+### 2.1 System architecture
 
-**System block diagram**
+The top-level module, `Stepper_Controller`, contains two principal components: a clock divider and a stepper motor FSM. The Basys3's 100 MHz clock is divided to 500 Hz and supplied to the FSM. At each rising edge of the divided clock, the FSM advances one step when enabled. The `dir` input determines the sequence direction, and `reset` initializes the controller.
+
+**Figure 1. Labelled block diagram of the stepper motor controller.**
 
 ```text
-             Basys3 FPGA
-     +---------------------------------------------+
-     |                                             |
-     |  100 MHz clk  +-----------+                 |
-     | ------------> | clk_div   |                 |
-     |               | 500 Hz    | -- slow_clk --+  |
-     |               +-----------+               |  |
-     |                                           v  |
-     |  SW1 (en) ----------------------------> +-------------+
-     |  SW0 (dir) ---------------------------> | stepper_    |
-     |  Center button (reset) --------------> | motor_FSM   |
-     |                 (reset also to divider)|             |
-     |                                        +-------------+
-     |                                              | q[3:0]
-     +----------------------------------------------|------+
-                                                    v
-                                           PMOD JA1 - JA4
-                                                    |
-                                                    v
-                                             ULN2003 driver
-                                                    |
-                                                    v
-                                              Stepper motor
+ Basys3 100 MHz clock
+          |
+          v
+  +-------------------+
+  | Clock Divider     |<--------- reset (BTN Center)
+  | clk_div           |
+  | 100 MHz -> 500 Hz |
+  +-------------------+
+          |
+       slow_clk
+          |
+          v
+  +------------------------+
+  | Stepper Motor FSM      |<--- dir (SW0)
+  | S0, S1, S2, S3, S4    |<--- en  (SW1)
+  |                        |<--- reset (BTN Center)
+  +------------------------+
+          |
+       q[3:0]
+          |
+          v
+   Basys3 PMOD JA1-JA4
+          |
+          v
+   ULN2003 Motor Driver
+          |
+          v
+       Stepper Motor
 ```
 
-*Figure 1. Controller architecture. The ULN2003 supplies the motor-coil current; the motor has an external supply and a common ground with the FPGA.*
+### 2.2 FSM operation
 
-The FSM is a **Moore machine**, so each output pattern depends on the current state.
+The controller uses **wave drive**, energizing one motor coil at a time. There are five states: one idle state and four active coil states.
 
-| State | Output `q[3:0]` | Coil selection |
-|---|---|---|
-| S0 | `0000` | All coils off |
-| S1 | `0001` | `q[0]` |
-| S2 | `0010` | `q[1]` |
-| S3 | `0100` | `q[2]` |
-| S4 | `1000` | `q[3]` |
+| State | `q[3:0]` | Function |
+|:---:|:---:|---|
+| S0 | `0000` | Idle; all coils off |
+| S1 | `0001` | Energize coil D (`q[0]`) |
+| S2 | `0010` | Energize coil C (`q[1]`) |
+| S3 | `0100` | Energize coil B (`q[2]`) |
+| S4 | `1000` | Energize coil A (`q[3]`) |
 
-For `en = 1`, the direction sequences are:
+When `en = '1'`, the states progress in the selected direction:
 
-- **Clockwise (`dir = 1`):** S1 → S2 → S3 → S4 → S1
-- **Counterclockwise (`dir = 0`):** S4 → S3 → S2 → S1 → S4
+- **Clockwise (`dir = '1'`):** S1 → S2 → S3 → S4 → S1 (repeat).
+- **Counterclockwise (`dir = '0'`):** S4 → S3 → S2 → S1 → S4 (repeat).
+- **Disabled (`en = '0'`):** The FSM returns to S0 on the next active clock edge.
+- **Reset (Part II):** The updated FSM immediately returns to S0 when reset is asserted.
 
-When `en = 0`, the original FSM returns to S0 on the next rising clock edge. The FPGA controller design also requires a reset input to return the FSM to S0.
+### 2.3 Step frequency
+
+The clock divider converts the **100 MHz** FPGA oscillator into a **500 Hz** stepping clock:
+
+\[
+T_{step}=\frac{1}{500\ \mathrm{Hz}}=2\ \mathrm{ms}
+\]
+
+Thus, the controller commands **500 steps per second**, assuming each rising edge produces one state transition. A complete four-pattern electrical sequence takes **8 ms**. Actual mechanical speed depends on the motor's internal step angle, gear ratio, and ability to follow the commanded steps.
 
 ## 3. Code
 
-The FSM is written using an enumerated state type (`S0` to `S4`). A clocked process checks the enable and direction signals and uses `case` statements to choose the next state. A separate output decoder converts the state into a four-bit wave-drive pattern.
+### 3.1 Part I — Stepper motor FSM
+
+The `stepper_motor_FSM.vhd` design defines the five states and uses a clocked process to update the current state according to `en` and `dir`. A separate output decoder maps the current state to the four-bit coil pattern. This makes the design a **Moore FSM**, because the output depends on the current state.
+
+Example state-transition logic:
 
 ```vhdl
-type state_type is (S0, S1, S2, S3, S4);
-signal state : state_type := S0;
+if rising_edge(clk) then
+    if en = '0' then
+        state <= S0;
+    elsif dir = '1' then
+        case state is
+            when S0 => state <= S1;
+            when S1 => state <= S2;
+            when S2 => state <= S3;
+            when S3 => state <= S4;
+            when S4 => state <= S1;
+        end case;
+    else
+        case state is
+            when S0 => state <= S4;
+            when S1 => state <= S4;
+            when S2 => state <= S1;
+            when S3 => state <= S2;
+            when S4 => state <= S3;
+        end case;
+    end if;
+end if;
+```
 
--- Moore output decoder
+The output decoder is:
+
+```vhdl
 with state select
     q <= "0000" when S0,
          "0001" when S1,
@@ -85,99 +127,157 @@ with state select
          "1000" when S4;
 ```
 
-For the FPGA implementation, the top-level controller will instantiate `clk_div` and `stepper_motor_FSM`. The output `slow_clk` from the divider connects to the FSM clock input. The divider is configured for an output frequency of **500 Hz**:
+**Part I files:**
 
-\[
-\text{Half-period count}=\frac{100,000,000}{2\times500}=100,000
-\]
+- **Design source:** [stepper_motor_FSM.vhd](../code/mp3/part1/stepper_motor_FSM.vhd)
+- **Testbench:** [stepper_motor_FSM_tb.vhd](../code/mp3/part1/stepper_motor_FSM_tb.vhd)
+- **Constraints (XDC):** [stepper_m.xdc](../code/mp3/part1/stepper_m.xdc)
 
-### Project files
+### 3.2 Part II — FPGA top-level controller
 
-These links use the **actual filenames and folder location** in this repository:
+Part II adds the `clk_div` component and a top-level module named `Stepper_Controller`. The clock divider receives the Basys3's 100 MHz system clock and produces `slow_clk` at 500 Hz. The updated FSM receives the slow clock, direction, enable, and reset signals.
 
-- **FSM design source:** [stepper_motor_FSM.vhd](../code/mp3/part1/stepper_motor_FSM.vhd)
-- **FSM testbench:** [stepper_motor_FSM_tb.vhd](../code/mp3/part1/stepper_motor_FSM_tb.vhd)
-- **FPGA constraints (XDC):** [stepper_m.xdc](../code/mp3/part1/stepper_m.xdc)
+Key instantiations in the top-level module:
 
-**Part II files to add:** `Stepper_Controller.vhd` and `clk_div.vhd` are required for FPGA implementation but are not shown in the uploaded `code/mp3/part1/` folder. Their links can be added after uploading them. The FSM will also need the reset-enabled version for Part II.
+```vhdl
+U_CLK_DIV : entity work.clk_div
+    generic map (
+        clk_in_freq  => 100_000_000,
+        clk_out_freq => 500
+    )
+    port map (
+        reset   => reset,
+        clk_in  => clk,
+        clk_out => slow_clk
+    );
+
+U_STEPPER_FSM : entity work.stepper_motor_FSM
+    port map (
+        clk   => slow_clk,
+        reset => reset,
+        en    => en,
+        dir   => dir,
+        q     => q
+    );
+```
+
+Reset was added to the Part II FSM interface to match the assignment's block diagram and allow the FPGA's center button to initialize the controller.
+
+**Part II files:**
+
+- **Top-level design source:** [Stepper_Controller.vhd](../code/mp3/part2/Stepper_Controller.vhd)
+- **Clock divider:** [clk_div.vhd](../code/mp3/part2/clk_div.vhd)
+- **Clock divider testbench:** [clk_div_tb.vhd](../code/mp3/part2/clk_div_tb.vhd)
+- **FSM design source (with reset):** [stepper_motor_FSM.vhd](../code/mp3/part2/stepper_motor_FSM.vhd)
+- **FSM testbench:** [stepper_motor_FSM_tb.vhd](../code/mp3/part2/stepper_motor_FSM_tb.vhd)
+- **Constraints (XDC):** [stepper_m.xdc](../code/mp3/part2/stepper_m.xdc)
 
 ## 4. Simulation
 
-The FSM was tested using **Vivado Behavioral Simulation** with a **10 µs clock period**. The testbench exercises clockwise and counterclockwise rotation, disable, restart, and changes in direction.
+### 4.1 Behavioral simulation — Part I
 
-![Stepper motor FSM behavioral simulation](../code/mp3/part1/simulation_waveforms.jpg)
+The FSM was tested in **Vivado Behavioral Simulation** with a **10 µs testbench clock**. This shorter simulation clock was used to observe transitions efficiently; the physical FPGA design uses the 500 Hz divided clock.
 
-*Figure 2. Vivado simulation showing the clock, enable, direction, individual coil outputs, and current FSM state.*
+**Figure 2. Part I FSM simulation waveforms showing `clk`, `dir`, `en`, `q[3:0]`, and the internal state.**
 
-| Test scenario | Expected behavior | Observed result |
-|---|---|---|
-| Initial condition | S0, output `0000` | Matched |
-| Clockwise rotation (`dir = 1`) | `0001 → 0010 → 0100 → 1000` | Matched |
-| Counterclockwise rotation (`dir = 0`) | Reverse stepping sequence | Matched |
-| Enable LOW (`en = 0`) | Return to S0 on next rising edge | Matched |
-| Re-enable in reverse direction | S0 → S4 (`1000`) | Matched |
-| Direction changes | Advance according to new direction | Matched |
-| Wave-drive operation | At most one coil output HIGH | Matched |
+![Part I behavioral simulation of stepper motor FSM](../code/mp3/part1/simulation_waveforms.jpg)
 
-The waveform displays `q[3:0]` as decimal values **0, 1, 2, 4, and 8**, corresponding to the binary values **0000, 0001, 0010, 0100, and 1000**. The individual `q[3]` through `q[0]` signals confirm that only one coil is energized during each drive state.
+The simulation covered the required four steps in each direction, as well as extra enable and direction-control checks.
 
-**Discrepancy and resolution:** One transition in the assignment's reverse-rotation table is inconsistent with the state diagram. The design uses **S1 → S4**, which maintains a continuous four-state counterclockwise sequence rather than returning to the idle state.
+| Scenario | Input conditions | Expected output sequence | Observed result |
+|---|---|---|---|
+| Initial idle | `en = 0` | `0000` (S0) | S0 observed |
+| Clockwise stepping | `en = 1`, `dir = 1` | `0001 → 0010 → 0100 → 1000` | Correct S1 → S2 → S3 → S4 transitions |
+| Reverse direction | `en = 1`, `dir = 0` | `0100 → 0010 → 0001 → 1000` | Correct S3 → S2 → S1 → S4 transitions |
+| Disable | `en = 0` | `0000` after next rising clock edge | Returned to S0 |
+| Restart in reverse | `en = 1`, `dir = 0` | `1000` from idle | Correct S4 output |
+| Change direction | `en = 1`, `dir = 1` | `0001` after S4 | Correct S1 output |
+| Final disable | `en = 0` | `0000` | Returned to S0 |
+
+The individual output bits also confirmed **one-hot coil activation**: exactly one of `q[3]`, `q[2]`, `q[1]`, and `q[0]` was high in each active state.
+
+**Discrepancies and resolution:** The assignment's counterclockwise state table included an inconsistent S1 → S0 transition. To preserve a continuous reverse four-state sequence, the implementation follows the state diagram with **S1 → S4** for counterclockwise operation. The simulation waveform verifies this transition. Vivado initially displayed the four-bit bus in decimal (`0, 1, 2, 4, 8`); these correspond to the required binary patterns (`0000, 0001, 0010, 0100, 1000`).
+
+### 4.2 Part II simulation scope
+
+A separate top-level simulation was **not required** by the lab instructions. The verified FSM was reused with a slowed clock, and the clock divider and FSM were integrated into the top-level design for elaboration and synthesis. The relevant testbench files are linked in Section 3.
 
 ## 5. Hardware
 
-### Elaborated design
+### 5.1 Part I — Elaborated design
 
-![Elaborated FSM schematic](../code/mp3/part1/elaborated_design_schematic.jpg)
+**Figure 3. Part I elaborated schematic of the standalone FSM.**
 
-*Figure 3. Vivado elaborated schematic of the stepper-motor FSM.*
+![Part I elaborated design schematic](../code/mp3/part1/elaborated_design_schematic.jpg)
 
-The elaborated design shows the FSM state register, direction-dependent next-state logic, multiplexers, and output decoding. This verifies that the VHDL is structurally interpreted as a state-based digital controller.
+The elaborated schematic shows the control inputs (`clk`, `dir`, `en`), a state register, state-transition logic, and the `q[3:0]` output decoder. It confirms the structural organization of the FSM before implementation on the FPGA.
 
-**Top-level controller elaboration:** *[screenshot after integrating `clk_div` and `Stepper_Controller`.]*
+### 5.2 Part II — Elaborated design
 
-### Synthesized design
+**Figure 4. Part II elaborated schematic of the complete stepper controller.**
 
-*[synthesized schematic screenshot after running Synthesis.]*
+![Part II elaborated controller schematic](../code/mp3/part2/elaborated_design.png)
 
-### Implementation
+The top-level schematic contains `U_CLK_DIV` and `U_STEPPER_FSM`. The divider's `clk_out` connects to the FSM clock. `reset` connects to both components, while `dir` and `en` control the FSM. The FSM produces the four output signals `q[3:0]`.
 
-The supplied XDC file assigns the FPGA clock, direction switch, enable switch, reset button, and four PMOD JA pins. Timing and implementation results remain to be documented after building the full top-level controller.
+### 5.3 Part II — Synthesized design
 
-*[implementation status, timing results, and any warnings here.]*
+**Figure 5. Part II synthesized schematic in Vivado.**
 
-### Resource utilization
+![Part II synthesized controller schematic](../code/mp3/part2/synthesized_design.png)
 
-| FPGA resource | Vivado utilization |
-|---|---|
-| LUTs | *[To be measured]* |
-| Flip-flops | *[To be measured]* |
-| I/O pins | *[To be measured]* |
-| Clock buffers | *[To be measured]* |
-| BRAM / DSP | *[To be measured]* |
+The synthesized schematic shows input buffers (`IBUF`), the system clock buffer (`BUFG`), the clock-divider and FSM blocks, and four output buffers (`OBUF`). These connections are consistent with the intended top-level architecture and confirm that Vivado synthesized the interconnected design. The schematic alone does not establish successful motor operation or quantify FPGA resource usage.
 
-### Hardware testing
+### 5.4 Constraints and FPGA connections
 
-The intended Basys3 controls and motor-driver connections are:
+The Basys3 controls are assigned as follows:
 
-| Signal | FPGA connection | Function |
+| Signal | Basys3 interface | FPGA package pin |
 |---|---|---|
-| `clk` | Onboard 100 MHz oscillator | System clock |
-| `dir` | SW0 | Rotation direction |
-| `en` | SW1 | Enable stepping |
-| `reset` | Center button | Return FSM to idle |
-| `q[0]` | JA1 → ULN2003 IN1 | Coil D control |
-| `q[1]` | JA2 → ULN2003 IN2 | Coil C control |
-| `q[2]` | JA3 → ULN2003 IN3 | Coil B control |
-| `q[3]` | JA4 → ULN2003 IN4 | Coil A control |
+| `clk` | 100 MHz onboard clock | W5 |
+| `reset` | Center pushbutton | U18 |
+| `dir` | Switch SW0 | V17 |
+| `en` | Switch SW1 | V16 |
+| `q[0]` (coil D) | PMOD JA1 | J1 |
+| `q[1]` (coil C) | PMOD JA2 | L2 |
+| `q[2]` (coil B) | PMOD JA3 | J2 |
+| `q[3]` (coil A) | PMOD JA4 | G2 |
 
-Expected behavior: enabling the controller produces a stepping sequence, changing `dir` reverses it, and disabling the controller de-energizes the coils once the FSM enters S0. The motor must be driven through the ULN2003 rather than directly from FPGA pins.
+The four FPGA outputs are intended to connect to the **ULN2003 motor driver**, rather than directly to the motor coils. The motor requires an appropriate external supply and a common ground with the FPGA/driver interface. Actual wiring and motor operation will be documented during hardware testing.
 
-**Actual FPGA/motor results:** *[observations and a photo]*
+### 5.5 Implementation
+
+The design has been elaborated and synthesized, and the corresponding schematic screenshots are shown above. **Final implementation or bitstream-generation results have not been documented in the repository materials shown here.** Those results should be added after checking the Vivado implementation status, timing summary, and bitstream generation.
+
+### 5.6 Resource utilization
+
+The synthesized schematic is available, but the resource-utilization report values were not provided. Reported LUT, flip-flop, and other resource counts should be copied from **Vivado → Open Synthesized Design → Report Utilization** rather than estimated.
+
+| Resource | Utilization |
+|---|---|
+| LUTs | To be recorded from Vivado |
+| Flip-flops | To be recorded from Vivado |
+| BUFG/clock buffers | To be recorded from Vivado |
+| I/O pins | To be recorded from Vivado |
+
+### 5.7 Physical FPGA testing — Pending
+
+**Hardware testing has not yet been completed/documented.** After programming the Basys3 and connecting the motor driver, the following scenarios will be tested:
+
+| Test condition | Expected behavior | Actual observation |
+|---|---|---|
+| `en = 0` | Motor coils disabled after next slow-clock edge | Pending |
+| `en = 1`, `dir = 1` | Clockwise step sequence | Pending |
+| `en = 1`, `dir = 0` | Counterclockwise step sequence | Pending |
+| Press center reset | Outputs return to `0000` | Pending |
+| Release reset with `en = 1` | Stepping resumes | Pending |
+
+**Physical FPGA photograph/video:** To be added after hardware testing.
 
 ## 6. Reflection
 
-This project improved my understanding of **finite state machines, sequential logic, Moore output decoding, and behavioral simulation**. Designing the wave-drive sequence demonstrated how a digital controller can produce an ordered pattern of outputs using a small number of states.
+This project demonstrated how a **finite state machine** can control a sequential electromechanical process. Designing the FSM separately from the clock divider made the system easier to understand, test, and reuse. The Part I waveform confirmed the expected state transitions for both directions, while the Part II schematics showed how separate VHDL modules can be integrated into a complete FPGA controller.
 
-One challenge was interpreting the direction-control transitions correctly. Comparing the provided state table and diagram revealed an inconsistency; correcting the reverse transition allowed the FSM to cycle continuously through all four drive states. The simulation also demonstrated how individual output-bit waveforms can be used to confirm the one-coil-at-a-time requirement.
+A key design challenge was translating the assignment's state diagram into consistent next-state logic, particularly where the counterclockwise state table contained an inconsistent transition. Following the complete reverse sequence and verifying each output with the testbench resolved that ambiguity. Another important concept was the distinction between a **simulation clock** (10 µs period for efficient verification) and the much slower **hardware stepping clock** (500 Hz) needed for motor control.
 
-The next stage extends the FSM into a larger FPGA system by incorporating clock division, reset control, external I/O constraints, and a motor driver. Completing synthesis and physical testing will provide an opportunity to compare verified simulation behavior with operation on real hardware.
+The project reinforced practical applications of **Moore FSMs, state registers, clock division, hierarchical VHDL design, testbench stimulus, pin constraints, elaboration, and synthesis**. The remaining step is to confirm the design through physical FPGA and motor testing and document any differences between simulated and real hardware behaviour.
