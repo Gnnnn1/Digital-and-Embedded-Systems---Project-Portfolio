@@ -9,15 +9,15 @@ title: "Project 2: Event Counter"
 
 **Video 1:**
 
-<video width="100%" controls>
+[<video width="100%" controls>
   <source src="../code/mp2/Part2/demonstration1.mp4" type="video/mp4">
 </video>
+](https://github.com/user-attachments/assets/2dfc13cf-1da7-4aa6-b94e-67803cc2cc0e
+)
 
 **Video 2:**
 
-<video width="100%" controls>
-  <source src="../code/mp2/Part2/demonstration2.mp4" type="video/mp4">
-</video>
+(https://github.com/user-attachments/assets/0e301db7-fa0c-4762-88fe-91745d259e7d)
 
 ## 1. Introduction
 
