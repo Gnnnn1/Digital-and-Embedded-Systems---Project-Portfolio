@@ -184,9 +184,9 @@ S ---------------->|                |
 
 ### Part 1 Files
 
-- **Design source:** [car_warnlight.vhd](code/mp1/part1/car_warnlight.vhd)
-- **Testbench:** [car_warnlight_tb.vhd](code/mp1/part1/car_warnlight_tb.vhd)
-- **Constraints (XDC):** [car_warnlight.xdc](code/mp1/part1/car_warnlight.xdc)
+- **Design source:** [car_warnlight.vhd](../code/mp1/part1/car_warnlight.vhd)
+- **Testbench:** [car_warnlight_tb.vhd](../code/mp1/part1/car_warnlight_tb.vhd)
+- **Constraints (XDC):** [car_warnlight.xdc](../code/mp1/part1/car_warnlight.xdc)
 
 The original VHDL design implements the warning logic using a concurrent signal assignment:
 
@@ -230,9 +230,9 @@ The original warning output is connected to `LED0`.
 
 ### Part 2 Files
 
-- **Design source:** [car_warnlight.vhd](code/mp1/part2/car_warnlight.vhd)
-- **Testbench:** [car_warnlight_tb.vhd](code/mp1/part2/car_warnlight_tb.vhd)
-- **Constraints (XDC):** [car_warnlight.xdc](code/mp1/part2/car_warnlight.xdc)
+- **Design source:** [car_warnlight.vhd](../code/mp1/part2/car_warnlight.vhd)
+- **Testbench:** [car_warnlight_tb.vhd](../code/mp1/part2/car_warnlight_tb.vhd)
+- **Constraints (XDC):** [car_warnlight.xdc](../code/mp1/part2/car_warnlight.xdc)
 
 The Part 2 design introduces separate warning signals:
 
@@ -317,7 +317,7 @@ For all other combinations, the warning light should remain LOW.
 
 The simulation waveform confirmed that the output behaved according to the expected Boolean logic.
 
-![Part 1 Simulation Waveform](code/mp1/part1/simulation.jpg)
+![Part 1 Simulation Waveform](../code/mp1/part1/simulation.jpg)
 
 ---
 
@@ -343,7 +343,7 @@ The waveform shows all four possible STATUS values:
 11
 ```
 
-![Part 2 Simulation Waveform](code/mp1/part2/simulation_waveform.jpg)
+![Part 2 Simulation Waveform](../code/mp1/part2/simulation_waveform.jpg)
 
 The simulation confirmed that:
 
@@ -367,7 +367,7 @@ The elaborated schematic shows the VHDL logic before FPGA-specific optimization.
 
 It contains the logic necessary to detect the door-warning and seat-belt-warning conditions and combine the two warning conditions into the `light_en` output.
 
-![Part 1 Elaborated Design](code/mp1/part1/elaborated_design_schematic.jpg)
+![Part 1 Elaborated Design](../code/mp1/part1/elaborated_design_schematic.jpg)
 
 ---
 
@@ -377,7 +377,7 @@ After synthesis, Vivado optimized the Boolean logic and mapped it into FPGA hard
 
 The synthesized schematic therefore appears different from the elaborated schematic even though the logical behaviour remains the same.
 
-![Part 1 Synthesized Design](code/mp1/part1/synthesized_design_schematic.jpg)
+![Part 1 Synthesized Design](../code/mp1/part1/synthesized_design_schematic.jpg)
 
 ---
 
@@ -387,7 +387,7 @@ The implemented design shows the physical placement of the synthesized logic ins
 
 Only a very small portion of the FPGA is required because the car warning system consists of simple combinational logic.
 
-![Part 1 Implemented Design](code/mp1/part1/implemented_design.jpg)
+![Part 1 Implemented Design](../code/mp1/part1/implemented_design.jpg)
 
 ---
 
@@ -395,7 +395,7 @@ Only a very small portion of the FPGA is required because the car warning system
 
 The Part 1 design uses very few FPGA resources because it does not require memory, counters, DSP blocks, or complex sequential logic.
 
-![Part 1 Resource Utilization](code/mp1/part1/utilization_report.jpg)
+![Part 1 Resource Utilization](../code/mp1/part1/utilization_report.jpg)
 
 ---
 
@@ -416,7 +416,7 @@ S = 0 → Seat belt not fastened
 
 The door-warning condition is active because the door is open while the key is inserted.
 
-![Hardware Test DKPS 0100](code/mp1/part1/0100.jpeg)
+![Hardware Test DKPS 0100](../code/mp1/part1/0100.jpeg)
 
 **Expected result:** Warning light ON.
 
@@ -437,7 +437,7 @@ S = 1 → Seat belt fastened
 
 The seat-belt warning is inactive, but the door-warning condition remains active.
 
-![Hardware Test DKPS 0101](code/mp1/part1/0101.jpeg)
+![Hardware Test DKPS 0101](../code/mp1/part1/0101.jpeg)
 
 **Expected result:** Warning light ON.
 
@@ -460,7 +460,7 @@ Both warning conditions are active.
 
 The door is open while the key is inserted, and a person is seated without the seat belt fastened.
 
-![Hardware Test DKPS 0110](code/mp1/part1/0110.jpeg)
+![Hardware Test DKPS 0110](../code/mp1/part1/0110.jpeg)
 
 **Expected result:** Warning light ON.
 
@@ -481,7 +481,7 @@ S = 1 → Seat belt fastened
 
 The seat-belt warning is inactive because the seat belt is fastened. However, the door warning remains active.
 
-![Hardware Test DKPS 0111](code/mp1/part1/0111.jpeg)
+![Hardware Test DKPS 0111](../code/mp1/part1/0111.jpeg)
 
 **Expected result:** Warning light ON.
 
@@ -502,7 +502,7 @@ S = 0 → Seat belt not fastened
 
 The door warning is inactive, but the seat-belt warning is active.
 
-![Hardware Test DKPS 1110](code/mp1/part1/1110.jpeg)
+![Hardware Test DKPS 1110](../code/mp1/part1/1110.jpeg)
 
 **Expected result:** Warning light ON.
 
@@ -523,7 +523,7 @@ S = 1 → Seat belt fastened
 
 Neither warning condition is active.
 
-![Hardware Test No Warning](code/mp1/part1/1111(all_other_conditions_no_light).jpeg)
+![Hardware Test No Warning](../code/mp1/part1/1111(all_other_conditions_no_light).jpeg)
 
 **Expected result:** Warning light OFF.
 
@@ -600,7 +600,7 @@ key_in AND seat_pressure AND NOT(seat_belt_closed)
 
 The two warning signals are then used to generate both the general warning output and the two-bit STATUS output.
 
-![Part 2 Elaborated Design](code/mp1/part2/elaborated_design_schematic.jpg)
+![Part 2 Elaborated Design](../code/mp1/part2/elaborated_design_schematic.jpg)
 
 ---
 
@@ -610,7 +610,7 @@ The synthesized schematic shows how Vivado mapped the VHDL logic into the FPGA a
 
 The inputs pass through input buffers, the Boolean functions are implemented using LUT resources, and the outputs pass through output buffers before reaching the FPGA pins.
 
-![Part 2 Synthesized Design](code/mp1/part2/synthesized_design_schematic.jpg)
+![Part 2 Synthesized Design](../code/mp1/part2/synthesized_design_schematic.jpg)
 
 ---
 
@@ -631,7 +631,7 @@ The seven bonded I/O pins correspond to:
 4 input switches + 3 output LEDs = 7 I/O pins
 ```
 
-![Part 2 Resource Utilization](code/mp1/part2/utilization.jpg)
+![Part 2 Resource Utilization](../code/mp1/part2/utilization.jpg)
 
 ---
 
@@ -652,7 +652,7 @@ S = 1 → Seat belt fastened
 
 Neither warning condition is active.
 
-![Part 2 No Warning DKPS 1101](code/mp1/part2/1101.jpeg)
+![Part 2 No Warning DKPS 1101](../code/mp1/part2/1101.jpeg)
 
 Expected output:
 
@@ -687,7 +687,7 @@ S = 1 → Seat belt fastened
 
 Only the door-warning condition is active.
 
-![Part 2 Door Warning DKPS 0101](code/mp1/part2/0101.jpeg)
+![Part 2 Door Warning DKPS 0101](../code/mp1/part2/0101.jpeg)
 
 Expected output:
 
@@ -722,7 +722,7 @@ S = 0 → Seat belt not fastened
 
 Only the seat-belt-warning condition is active.
 
-![Part 2 Seat-Belt Warning DKPS 1110](code/mp1/part2/1110.jpeg)
+![Part 2 Seat-Belt Warning DKPS 1110](../code/mp1/part2/1110.jpeg)
 
 Expected output:
 
@@ -757,7 +757,7 @@ S = 0 → Seat belt not fastened
 
 Both warning conditions are active.
 
-![Part 2 Both Warnings DKPS 0110](code/mp1/part2/0110.jpeg)
+![Part 2 Both Warnings DKPS 0110](../code/mp1/part2/0110.jpeg)
 
 Expected output:
 
