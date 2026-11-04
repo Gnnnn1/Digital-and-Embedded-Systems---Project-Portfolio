@@ -1,461 +1,495 @@
----
-layout: default
-title: "Project 2: Event Counter"
----
-
 # Project 2: Event Counter
-
-### Hardware Demonstration
-
-**Video 1:**
-
-[<video width="100%" controls>
-  <source src="../code/mp2/Part2/demonstration1.mp4" type="video/mp4">
-</video>
-](https://github.com/user-attachments/assets/2dfc13cf-1da7-4aa6-b94e-67803cc2cc0e
-)
-
-**Video 2:**
-
-(https://github.com/user-attachments/assets/0e301db7-fa0c-4762-88fe-91745d259e7d)
 
 ## 1. Introduction
 
-This project involves designing and implementing a 4-bit modulo-16 counter using VHDL on the Digilent Basys3 FPGA board. The project consists of two stages: an automatic counter and a button-controlled event counter.
+Project 2 implements an **Event Counter** using VHDL on the Basys3 FPGA board. The project was completed in two parts.
 
-In **Part I**, a 100 MHz system clock is divided into a 1 Hz clock to increment the counter automatically. The count is displayed in hexadecimal (0–F) on the rightmost seven-segment display and in binary using four onboard LEDs.
+### Part 1 – Mod-16 Automatic Counter
 
-In **Part II**, the automatic clock is replaced by a debounced push-button signal, allowing the counter to increment once per valid button press. A separate push button provides asynchronous reset functionality.
+Part 1 implements a **4-bit Mod-16 counter** that automatically counts from hexadecimal `0` to `F`. The Basys3 board's 100 MHz clock is divided down to a much slower clock so that the counter output can be observed visually.
 
-The main objectives were to develop sequential and combinational circuits in VHDL, integrate reusable modules, implement button debouncing, and verify the designs through simulation and FPGA implementation.
+The 4-bit counter value is displayed using:
+
+- Four LEDs representing the binary count.
+- A seven-segment display representing the same value in hexadecimal.
+
+The main objectives were to:
+
+- Divide the 100 MHz Basys3 system clock to a usable low frequency.
+- Create a Mod-16 binary counter.
+- Convert the 4-bit count into seven-segment display patterns.
+- Integrate the individual modules into a top-level VHDL design.
+- Verify the modules through simulation.
+- Synthesize and test the complete system on the FPGA.
+
+### Part 2 – Pushbutton Event Counter
+
+Part 2 extends the design into an **event counter**. Instead of automatically incrementing every second, the counter increments when a pushbutton event is detected.
+
+A button-debounce circuit is added so that one physical button press produces one valid count event rather than multiple false counts caused by mechanical switch bouncing.
+
+The completed design demonstrates several important digital-design concepts, including:
+
+- Clock division
+- Modular VHDL design
+- Binary counting
+- Seven-segment decoding
+- Pushbutton debouncing
+- Hardware integration
+- FPGA synthesis and implementation
+
+---
 
 ## 2. Design
 
-### Part I — Automatic Counter
+# Part 1 – Automatic Mod-16 Counter
 
-The design consists of three main functional blocks:
+The Part 1 system contains four major functional blocks:
 
-- **Clock Divider (`clk_div`)** — Divides the Basys3 100 MHz clock into a 1 Hz clock.
-- **Modulo-16 Counter (`modMCounter`)** — Uses a four-bit unsigned register to count from 0 to F and automatically wrap around to 0.
-- **Hexadecimal Decoder (`hex_7seg`)** — Converts the counter output into active-low seven-segment patterns.
+1. **Clock Divider**
+2. **Mod-16 Counter**
+3. **Hexadecimal Seven-Segment Decoder**
+4. **Top-Level Display Controller**
 
-The counter output also connects directly to four LEDs to display the binary count.
+### System Operation
 
-The clock divider uses:
+The Basys3 FPGA provides a 100 MHz clock. This frequency is far too fast to observe directly using LEDs, so the `clk_div` module generates a much slower clock.
 
-\[
-MAX\_COUNT=\frac{f_{in}}{2f_{out}}-1
-\]
+The slow clock drives the Mod-16 counter.
 
-For a 100 MHz input and 1 Hz output:
-
-\[
-MAX\_COUNT=49,999,999
-\]
-
-The clock output toggles every 50 million input cycles, completing one output period every second.
-
-**Part I system architecture**
+The counter produces a 4-bit value:
 
 ```text
-100 MHz Clock
-      |
-      v
-+-------------+
-| Clock       |
-| Divider     |
-| (1 Hz)      |
-+-------------+
-      |
-      v
-+-------------+
-| Modulo-16   |--------> LEDs [3:0]
-| Counter     |
-+-------------+
-      |
-      v
-+-------------+
-| Hexadecimal |
-| to 7-Segment|
-| Decoder     |
-+-------------+
-      |
-      v
-7-Segment Display
-
-Reset ---> Clock Divider and Counter
+0000 → 0001 → 0010 → ... → 1110 → 1111 → 0000
 ```
 
-### Part II — Button Event Counter
-
-Part II replaces the clock divider with a button debounce module. The modulo-16 counter and hexadecimal decoder are reused from Part I.
-
-The debounce module synchronizes the mechanical push-button input to the 100 MHz system clock and accepts the button state only after it remains stable for a specified interval.
-
-The hardware debounce interval is:
-
-\[
-T=\frac{2,000,000}{100,000,000}=20\text{ ms}
-\]
-
-Once a button press is accepted, the debounced output generates a rising edge that increments the counter.
-
-Holding the button does not repeatedly increment the count because the debounced output remains high until the button is released.
-
-**Part II system architecture**
+This corresponds to:
 
 ```text
-100 MHz Clock ----------+
-                        |
-Count Button (BTNU) ----+
-                        |
-                        v
-                +----------------+
-                | Button         |
-                | Debounce       |
-                +----------------+
-                        |
-                 Debounced Signal
-                        |
-                        v
-                +----------------+
-Reset (BTNC) -->| Modulo-16      |----> LEDs [3:0]
-                | Counter        |
-                +----------------+
-                        |
-                        v
-                +----------------+
-                | Hexadecimal    |
-                | to 7-Segment   |
-                | Decoder        |
-                +----------------+
-                        |
-                        v
-                 7-Segment Display
+0 → 1 → 2 → ... → E → F → 0
 ```
 
-The reset button connects to both the debouncer and counter, ensuring the internal state returns to zero.
+The 4-bit count is sent to both the LEDs and the hexadecimal seven-segment decoder.
+
+### Part 1 Block Diagram
+
+```text
+                     +----------------+
+100 MHz Clock ------>| Clock Divider  |
+                     |    clk_div     |
+                     +-------+--------+
+                             |
+                             | slow_clk
+                             v
+                     +----------------+
+                     | Mod-16 Counter |
+                     |  modMCounter   |
+                     +-------+--------+
+                             |
+                           count
+                         [3 downto 0]
+                          /        \
+                         /          \
+                        v            v
+              +--------------+   +----------------+
+              | LEDs [3:0]   |   | Hex Decoder    |
+              | Binary Count |   |    hex_7seg    |
+              +--------------+   +-------+--------+
+                                         |
+                                         v
+                                Seven-Segment Display
+```
+
+---
+
+# Part 2 – Pushbutton Event Counter
+
+Part 2 replaces the continuously running count event with a pushbutton-controlled event.
+
+The major blocks are:
+
+1. **Pushbutton Input**
+2. **Button Debouncer**
+3. **Counter**
+4. **Hexadecimal Decoder**
+5. **LED / Seven-Segment Outputs**
+
+Mechanical pushbuttons do not generate a perfectly clean transition. A single press can rapidly alternate between logic `0` and logic `1` before becoming stable.
+
+The `button_debounce` module filters these unwanted transitions so that the counter responds to a valid button event.
+
+### Part 2 Block Diagram
+
+```text
+                    +-------------------+
+Count Button ------>| Button Debouncer  |
+                    | button_debounce   |
+                    +---------+---------+
+                              |
+                        Valid Button Event
+                              |
+                              v
+                    +-------------------+
+                    |   Mod-16 Counter  |
+Reset Button ------>|    / Counter      |
+                    +---------+---------+
+                              |
+                           count[3:0]
+                           /        \
+                          /          \
+                         v            v
+                 +------------+   +----------------+
+                 | LEDs [3:0] |   | Hex Decoder    |
+                 +------------+   |    hex_7seg    |
+                                  +--------+-------+
+                                           |
+                                           v
+                                  Seven-Segment Display
+```
+
+The final system increments once for each valid button press and can cycle through hexadecimal values from `0` to `F`.
+
+---
 
 ## 3. Code
 
-The design was implemented using VHDL in Xilinx Vivado 2019.2.
+# Part 1 Code
 
-### 3.1 Clock Divider
+### Design Files
 
-The clock divider uses a counter to track rising edges of the input clock and toggle the output once the maximum count is reached.
+- **Top-level design:** [count_display.vhd](../code/mp2/Part1/count_display.vhd)
+- **Clock divider:** [clk_div.vhd](../code/mp2/Part1/clk_div.vhd)
+- **Mod-16 counter:** [modMcounter.vhd](../code/mp2/Part1/modMcounter.vhd)
+- **Seven-segment decoder:** [hex_7seg.vhd](../code/mp2/Part1/hex_7seg.vhd)
+- **Constraints (XDC):** [lab7.xdc](../code/mp2/Part1/lab7.xdc)
 
-```vhdl
-elsif rising_edge(clk_in) then
-    if count = MAX_COUNT then
-        count := 0;
-        clk_sig <= not clk_sig;
-    else
-        count := count + 1;
-    end if;
-end if;
+> The simulation testbench file is not currently visible in the Part1 GitHub folder and should be uploaded separately if a direct repository link is required.
+
+### Clock Divider
+
+The `clk_div` module reduces the Basys3 100 MHz system clock to a much slower clock that can be observed on the physical FPGA.
+
+Conceptually:
+
+```text
+100 MHz system clock
+        |
+        v
+Clock Divider
+        |
+        v
+Slow clock
 ```
 
-This produces the divided clock used in Part I.
+The slow clock is then used to trigger the counter.
 
-### 3.2 Modulo-16 Counter
+---
 
-The counter increments an unsigned register on each rising clock edge.
+### Mod-16 Counter
 
-```vhdl
-process(clk, reset)
-begin
-    if reset = '1' then
-        count_reg <= (others => '0');
+The counter stores a 4-bit value and increments once for each valid clock event.
 
-    elsif rising_edge(clk) then
-        count_reg <= count_reg + 1;
-    end if;
-end process;
+A 4-bit counter naturally contains 16 possible states:
 
-count <= std_logic_vector(count_reg);
+```text
+0000 to 1111
 ```
 
-The four-bit register supports 16 values, and the asynchronous reset clears the count independently of the clock.
+or:
 
-### 3.3 Hexadecimal-to-Seven-Segment Decoder
-
-The decoder uses a combinational `case` statement to map hexadecimal values to display patterns.
-
-```vhdl
-process(hexdigit)
-begin
-    case hexdigit is
-        when "0000" => seg <= "1000000"; -- 0
-        when "0001" => seg <= "1111001"; -- 1
-        when "0010" => seg <= "0100100"; -- 2
-        when "0011" => seg <= "0110000"; -- 3
-        -- Additional mappings for 4 to E
-        when "1111" => seg <= "0001110"; -- F
-        when others => seg <= "1111111";
-    end case;
-end process;
+```text
+0 to F
 ```
 
-Since the Basys3 uses a common-anode seven-segment display, a logic 0 activates the corresponding segment.
+After reaching `1111`, the counter wraps back to `0000`.
 
-The anode signal is assigned `1110` to enable the rightmost display digit.
+---
 
-### 3.4 Button Debounce
+### Seven-Segment Decoder
 
-The supplied debounce module compares the synchronized button input against its previously accepted state.
+The `hex_7seg` module converts the four-bit binary count into the correct seven-segment pattern for hexadecimal values:
 
-```vhdl
-if btn2 = btn_stable then
-    count <= 0;
-else
-    if count < STABLE_CYCLES - 1 then
-        count <= count + 1;
-    else
-        btn_stable <= btn2;
-        count <= 0;
-    end if;
-end if;
+```text
+0 1 2 3 4 5 6 7 8 9 A B C D E F
 ```
 
-The module rejects temporary input transitions and updates the debounced signal only after the input remains stable.
+This allows the same counter value to be viewed in both binary and hexadecimal form.
 
-### 3.5 Top-Level Integration
+---
 
-In Part II, the debounced button output replaces the divided clock.
+### Top-Level Design
 
-```vhdl
-U1: entity work.button_debounce
-    generic map (
-        STABLE_CYCLES => DEBOUNCE_CYCLES
-    )
-    port map (
-        clk_in => clock,
-        reset  => btn_reset,
-        btn_in => btn_count,
-        btn_db => btn_db_sig
-    );
+The `count_display` module connects the individual components together.
 
-U2: entity work.modMCounter
-    generic map (
-        N => 4
-    )
-    port map (
-        clk   => btn_db_sig,
-        reset => btn_reset,
-        count => count_sig
-    );
+Its role is to:
+
+- Receive the Basys3 master clock.
+- Generate the slow clock.
+- Drive the counter.
+- Send the count to the LEDs.
+- Send the same count to the seven-segment decoder.
+
+---
+
+# Part 2 Code
+
+### Design Files
+
+- **Top-level design:** [count_display.vhd](../code/mp2/Part2/count_display.vhd)
+- **Button debounce:** [button_debounce.vhd](../code/mp2/Part2/button_debounce.vhd)
+- **Clock divider:** [clk_div.vhd](../code/mp2/Part2/clk_div.vhd)
+- **Mod-16 counter:** [modMcounter.vhd](../code/mp2/Part2/modMcounter.vhd)
+- **Seven-segment decoder:** [hex_7seg.vhd](../code/mp2/Part2/hex_7seg.vhd)
+- **Constraints (XDC):** [lab7.xdc](../code/mp2/Part2/lab7.xdc)
+
+> The Part2 testbench file is not currently visible in the GitHub folder and should be uploaded separately if a direct testbench link is required.
+
+### Button Debounce
+
+The main addition in Part 2 is the `button_debounce` module.
+
+Without debouncing, a single physical button press may be interpreted as several rapid transitions.
+
+Conceptually:
+
+```text
+Raw Pushbutton
+     |
+     |  bouncing signal
+     v
++-----------------+
+| Button Debounce |
++-----------------+
+     |
+     | clean event
+     v
+    Counter
 ```
 
-The same counter and display modules are reused, demonstrating modular design and component integration.
+The debounced button output provides a stable event that can be used to increment the counter reliably.
 
-### 3.6 Source Files and Attachments
-
-All project source files and constraints are available in the GitHub repository.
-
-**[View Mini-Project 2 Source Files](https://github.com/Gnnnn1/Digital-and-Embedded-Systems---Project-Portfolio/tree/main/code/mp2)**
-
-**Part I — Automatic Counter**
-
-| File | Description |
-|---|---|
-| [clk_div.vhd](../code/mp2/Part1/clk_div.vhd) | Configurable frequency divider |
-| [modMcounter.vhd](../code/mp2/Part1/modMcounter.vhd) | Generic modulo-M counter |
-| [hex_7seg.vhd](../code/mp2/Part1/hex_7seg.vhd) | Hexadecimal-to-seven-segment decoder |
-| [count_display.vhd](../code/mp2/Part1/count_display.vhd) | Top-level structural design |
-| [lab7.xdc](../code/mp2/Part1/lab7.xdc) | Basys3 pin constraints |
-
-**Part II — Button Event Counter**
-
-| File | Description |
-|---|---|
-| [button_debounce.vhd](../code/mp2/Part2/button_debounce.vhd) | Provided button debounce module |
-| [clk_div.vhd](../code/mp2/Part2/clk_div.vhd) | Clock divider source retained from Part I; unused in Part II top-level |
-| [modMcounter.vhd](../code/mp2/Part2/modMcounter.vhd) | Reused four-bit counter |
-| [hex_7seg.vhd](../code/mp2/Part2/hex_7seg.vhd) | Reused seven-segment decoder |
-| [count_display.vhd](../code/mp2/Part2/count_display.vhd) | Modified button-controlled top-level design |
-| [lab7.xdc](../code/mp2/Part2/lab7.xdc) | Updated button and display constraints |
-
-**Testbenches:** `clk_div_tb.vhd`, `modMCounter_tb.vhd`, and `count_display_tb.vhd` were used for simulation. They were not present in the uploaded-folder screenshots and should be added to the repository before direct links can be provided.
+---
 
 ## 4. Simulation
 
-Behavioral simulations were performed using Vivado to verify individual modules and the integrated designs.
+# Part 1 Simulation
 
-### 4.1 Clock Divider Simulation
+Several simulations were used to verify the Part 1 modules individually before testing the complete system.
 
-The clock divider was tested to verify that the input clock was successfully divided.
+### Clock Divider Simulation
 
-The initial waveform showed a constant output because the observation interval was too short. After extending the simulation, the output was observed toggling periodically.
+The clock-divider simulation verifies that the output clock changes at the required reduced frequency.
 
-**Result:** Periodic frequency division was demonstrated.
+![Clock Divider Waveform](../code/mp2/Part1/clk_div_waveform.jpg) 
 
-![Clock Divider Simulation](../code/mp2/Part1/clk_div_waveform.jpg)
+The high-frequency input clock is divided to generate a slower output clock suitable for driving the counter. The simulated waveform showed the expected clock-divider behaviour. The test confirms that the divider correctly converts the FPGA system clock into the slower timing signal required by the design.
 
-*Figure 1. Clock divider simulation waveform.*
+---
 
-### 4.2 Modulo-16 Counter Simulation
+### Mod-16 Counter Simulation
 
-The four-bit counter was tested using a 10 ns input clock period.
+The Mod-16 counter was simulated to confirm that the output increments through all sixteen states.
 
-The simulation showed the binary count incrementing sequentially and wrapping around from F to 0.
+![Mod-16 Counter Waveform](../code/mp2/Part1/modMcounter_waveform.jpg) 
 
-**Result:** The counter demonstrated the required modulo-16 operation.
+The counter should progress from `0000` through `1111` and then return to `0000`. The waveform showed the expected sequential count. The simulation confirmed the correct Mod-16 rollover behaviour.
 
-![Modulo-16 Counter Simulation](../code/mp2/Part1/modMcounter_waveform.jpg)
+---
 
-*Figure 2. Modulo-16 counter simulation waveform.*
+### Slow Clock / Integrated Timing
 
+The slow-clock signal was also observed in simulation to verify that the top-level design receives the correct timing signal.
 
-### 4.3 Part I Top-Level Simulation
+![Slow Clock Waveform](../code/mp2/Part1/slowclkwaveform.jpg)
 
-The integrated automatic counter was tested using the 100 MHz system clock and 1 Hz divided clock.
+The counter should respond to the divided clock instead of the original 100 MHz system clock. The slow-clock waveform was generated as expected. These simulations confirmed the correct operation of the Part 1 timing and counting logic before hardware implementation.
 
-The following results were observed:
+---
 
-| Count | LED Output | Seven-Segment Output |
-|---|---|---|
-| 0 | 0000 | 40 |
-| 1 | 0001 | 79 |
-| 2 | 0010 | 24 |
+# Part 2 Simulation
 
-The waveform showed the count, LED outputs, and seven-segment decoder changing together.
+Part 2 focuses on replacing the automatic counting event with a debounced pushbutton event.
 
-**Result:** The automatic counter and display modules operated as expected for the observed values.
+The important behaviours verified were:
 
-![Part I Top-Level Simulation](../code/mp2/Part1/slowclkwaveform.jpg)
+- Reset initializes the counter.
+- One valid pushbutton press increments the counter once.
+- Repeated button events continue incrementing the count.
+- The count wraps from `F` back to `0`.
+- The binary LED output and seven-segment output represent the same counter value.
 
-*Figure 3. Part I top-level waveform showing the divided clock, counter, LEDs, and display outputs.*
+The use of a debounce module prevents a single physical press from being interpreted as several count events.
 
-### 4.4 Part II Button Event Simulation
-
-The Part II testbench simulated multiple button presses, a short invalid pulse, holding the count button, wraparound, and asynchronous reset.
-
-A reduced debounce value of four clock cycles was used for faster simulation, while the hardware design retained the 20 ms debounce interval.
-
-| Test Scenario | Expected Behaviour | Observed Result |
-|---|---|---|
-| Initial reset | Count starts at 0 | Correct |
-| Short invalid pulse | No increment | Correct |
-| Valid button press | Increment by one | Correct |
-| Button held down | No repeated increments | Correct |
-| Multiple presses | Sequential counting | Correct |
-| Counter reaches F | Next press returns to 0 | Correct |
-| Reset button | Count returns to 0 | Correct |
-| Press after reset | Counter increments again | Correct |
-
-The final simulation showed the complete hexadecimal sequence from 0 to F, followed by wraparound to 0.
-
-The display also updated correctly with each count.
-
-**Result:** The integrated button-controlled counter demonstrated the required event-counting functionality.
-
-**Part II simulation screenshot:** Image not yet present in the shown GitHub `Part2` folder.
-
-### 4.5 Simulation Troubleshooting
-
-During Part II testing, the button input initially changed in the simulation while the debounced output remained at zero.
-
-The issue was related to the debounce interval being too long for the simulated button presses.
-
-A configurable debounce generic was added to the top-level design, allowing the simulation to use four cycles while maintaining the original hardware debounce value.
-
-After correcting the configuration and relaunching the simulation, the counter incremented correctly.
-
-This demonstrated the importance of choosing appropriate testbench timing when verifying hardware modules.
+---
 
 ## 5. Hardware
 
-### 5.1 Elaborated Design
+# Part 1 Hardware
 
-The elaborated schematics were inspected to verify the structural connections between modules.
+### Elaborated / Top-Level Design
 
-In Part I, the clock divider output drives the modulo-16 counter.
+The top-level schematic shows the integration of the clock divider, Mod-16 counter, and seven-segment display logic.
 
-In Part II, the button debounce module replaces the clock divider, and its output drives the counter clock input.
+ ![Part 1 Count Display Schematic](../code/mp2/Part1/count_display_schematic.jpg)
+ The complete design combines the clock divider, counter, and display modules into one FPGA system. The schematic confirms that the modules are correctly interconnected.
 
-The counter output connects to both the LEDs and hexadecimal decoder.
+---
 
-![Part I Elaborated Schematic](../code/mp2/Part1/count_display_schematic.jpg)
+### Synthesized Design
 
-*Figure 4. Elaborated design schematic for the automatic counter.*
+After synthesis, Vivado maps the VHDL design into FPGA resources such as LUTs, registers, clock-routing resources, and I/O buffers.
 
-**Part II elaborated schematic:** Image not yet present in the shown GitHub `Part2` folder.
+![Part 1 Synthesized Schematic](../code/mp2/Part1/synthesized_schematic.jpg) 
 
-### 5.2 Synthesized Design
+---
 
-The synthesized design shows how Vivado converts the VHDL modules into FPGA-compatible hardware.
+### Implementation
 
-The synthesized schematic includes input buffers, a global clock buffer, counter logic, debounce logic, and output buffers connected to the LEDs and seven-segment display.
+The completed design was synthesized, implemented, and converted into a bitstream for the Basys3 FPGA.
 
-The schematic confirmed that the intended module connections were retained through synthesis.
+The physical board was programmed and the counter operation was observed using the LEDs and seven-segment display.
 
-![Part I Synthesized Schematic](../code/mp2/Part1/synthesized_schematic.jpg)
+The displayed value progressed through:
 
-*Figure 5. Synthesized design schematic for the automatic counter.*
+```text
+0 → 1 → 2 → 3 → ... → E → F → 0
+```
 
-**Part II synthesized schematic:** Image not yet present in the shown GitHub `Part2` folder.
+---
 
-### 5.3 Implementation
+### Part 1 Hardware Demonstration
 
-After synthesis, the design was processed through FPGA implementation.
+The video shows the Part 1 design operating on the Basys3 FPGA.
 
-The Vivado Device view was used to inspect the placement of the design within the Artix-7 FPGA fabric.
+https://github.com/user-attachments/assets/0163f84f-9705-449b-9edb-67235d826d8e
 
-**Implementation screenshot:** Image not yet present in the shown GitHub folders.
+https://github.com/user-attachments/assets/88e4f7a9-c264-46de-a448-123177c28a3d
 
-### 5.4 Resource Utilization
+The hardware demonstrations confirmed that the counter operated correctly after synthesis, implementation, bitstream generation, and FPGA programming.
 
-The implemented design uses FPGA resources for the counter, input synchronization, debounce timing, combinational decoding, and external connections.
+---
 
-| FPGA Resource | Part I | Part II |
-|---|---|---|
-| Slice LUTs | TBD | TBD |
-| Slice Registers | TBD | TBD |
-| Bonded IOBs | TBD | TBD |
-| Global Clock Buffers | TBD | TBD |
+# Part 2 Hardware
 
-**Utilization report:** Screenshot and numeric values not yet available in the shown GitHub folders.
+### Top-Level Design
 
-### 5.5 Hardware Testing
+The Part 2 top-level design integrates the pushbutton debounce circuit with the counter and display logic.
 
-The design was prepared for programming onto the Digilent Basys3 FPGA board.
+![Part 2 Top-Level Design](../code/mp2/Part2/toplevel.jpg) 
 
-**Part I expected operation:**
+The top-level design connects the pushbutton input, debounce circuit, counter, reset control, LEDs, and seven-segment output. The system was successfully integrated before synthesis.
 
-The counter automatically increments from 0 to F, while the rightmost seven-segment digit displays the hexadecimal count and the LEDs display the corresponding four-bit binary value.
+---
 
-**Part II expected operation:**
+### Elaborated Design
 
-- BTNU increments the counter once per valid press.
-- Holding BTNU does not cause repeated counting.
-- Pressing BTNU after F returns the count to 0.
-- BTNC asynchronously resets the count to zero.
-- The four LEDs display the binary count.
+The elaborated schematic shows the logical relationships between the individual Part 2 modules before FPGA-specific optimization.
 
-| Hardware Test | Expected Result | Observed Result |
-|---|---|---|
-| Initial reset | Display 0 | To be recorded |
-| Single count press | Increment by 1 | To be recorded |
-| Held count button | Only one increment | To be recorded |
-| Wraparound | F returns to 0 | To be recorded |
-| Reset | Counter returns to 0 | To be recorded |
+| Description | Schematic |
+|---|---|
+| **Elaborated design** | ![Part 2 Elaborated Schematic](../code/mp2/Part2/schematic.jpg) |
+| The schematic shows how the button-debounce circuit and counting logic interact. | The design structure matched the intended event-counter architecture. |
 
-**Hardware testing photo/video:** Not yet present in the shown GitHub folders.
+---
+
+### Synthesized Design
+
+The Part 2 design was synthesized to map the VHDL logic into FPGA hardware resources.
+
+![Part 2 Synthesized Schematic](../code/mp2/Part2/synthesized_schematic.jpg)
+
+---
+
+### Hardware Testing
+
+The physical FPGA was tested using the pushbuttons and the seven-segment display.
+
+The expected operation was:
+
+```text
+Initial state
+Count = 0
+```
+
+After one valid count-button event:
+
+```text
+Count = 1
+```
+
+After another valid event:
+
+```text
+Count = 2
+```
+
+and so on until:
+
+```text
+Count = F
+```
+
+The following valid event causes rollover:
+
+```text
+F → 0
+```
+
+The reset input returns the counter to its initial state.
+
+---
+
+### Part 2 Hardware Demonstration
+
+This demonstration shows the pushbutton-controlled event counter operating on the Basys3 FPGA.
+
+https://github.com/user-attachments/assets/8e6a5ba1-f4af-4a58-8608-87029d5ca03a
+
+https://github.com/user-attachments/assets/bfa83c67-8e12-45de-931f-9a07333bc400
+
+The hardware demonstrations showed that valid button events were successfully detected and used to increment the displayed count.
+
+---
 
 ## 6. Reflection
 
-This project strengthened my understanding of sequential and combinational digital circuits and how they can be combined into a complete FPGA-based system.
+Project 2 provided practical experience in designing a larger FPGA system from several reusable VHDL modules.
 
-In Part I, the clock divider demonstrated how a high-frequency system clock can be reduced to a slower frequency using counting logic. The modulo-16 counter reinforced binary arithmetic, clock-edge triggering, and asynchronous reset operation.
+One of the main challenges in Part 1 was handling the large difference between the **100 MHz Basys3 system clock** and the much slower frequency required for a human-visible counter. A clock-divider module was therefore required to generate a slow timing signal before the counter could be tested on the physical FPGA.
 
-The seven-segment decoder provided practical experience implementing combinational logic using a truth table and VHDL `case` statements.
+The Mod-16 counter also demonstrated the relationship between binary and hexadecimal values. A four-bit counter provides sixteen possible states, allowing the counter to display values from `0` through `F`.
 
-Part II introduced button debouncing, an important concept when interfacing physical inputs with digital systems. Mechanical buttons do not always produce ideal transitions, so additional logic is required to prevent unwanted events.
+The seven-segment decoder demonstrated how combinational logic can translate a binary value into the output pattern required by a physical display.
 
-One of the main challenges was troubleshooting the button debounce simulation. Although the testbench generated button presses, the counter initially remained at zero because the debounce duration was too long relative to the simulated pulses.
+Part 2 introduced another important hardware issue: **mechanical button bounce**. A physical pushbutton does not always transition cleanly from logic `0` to logic `1`. Without debouncing, a single button press could be interpreted as multiple events. Adding the debounce module allowed the FPGA to recognize stable button events and produce predictable counter behaviour.
 
-By making the debounce duration configurable, I was able to test the logic efficiently while maintaining the required hardware timing.
+The project also demonstrated the benefit of modular digital design. Instead of implementing the entire system in one large VHDL architecture, separate components were created for:
 
-The project also helped me understand the distinction between behavioral simulation, RTL elaboration, synthesis, and FPGA implementation.
+- Clock division
+- Event counting
+- Pushbutton debouncing
+- Seven-segment decoding
+- Top-level system integration
 
-Overall, this project provided valuable experience in designing modular VHDL systems, verifying sequential logic, and translating digital designs into hardware suitable for implementation on an FPGA.
+Each module could be tested independently before being integrated into the complete FPGA design.
+
+Through this project, I gained experience with:
+
+- Clock division
+- Clocked VHDL processes
+- Modulo counters
+- Binary and hexadecimal representation
+- Seven-segment displays
+- Component instantiation
+- Modular VHDL design
+- Pushbutton debouncing
+- Testbench development
+- Simulation waveform analysis
+- RTL elaboration
+- FPGA synthesis
+- Hardware implementation
+- Bitstream generation
+- Basys3 hardware testing
+- Debugging differences between simulation and physical hardware
+
+Overall, Project 2 demonstrated how multiple digital building blocks can be combined into a complete embedded FPGA system. Part 1 established the basic counting and display architecture, while Part 2 extended the system into a practical event counter controlled by real physical inputs.
