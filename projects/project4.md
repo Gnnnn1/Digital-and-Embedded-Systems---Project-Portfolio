@@ -1,8 +1,3 @@
----
-layout: default
-title: Project 4
----
-
 # Project 4: Digital Waveform Synthesizer
 
 ## 1. Introduction
@@ -101,7 +96,7 @@ The FPGA outputs digital logic levels, **not a continuous analog voltage directl
 
 > **Package naming:** The Part I file is named `wave_package.vhd` but declares `sine_package`. The Part II file declares `wave_package`. Each version of `wavegen.vhd` imports the matching package; the two parts should be built with their corresponding files.
 
-### 3.2 Sine-wave sample generation (package)
+### 3.2 Sine-wave sample generation
 
 The VHDL package defines a `rom_type` array and a `sine_rom` function. During synthesis/elaboration, the function fills a table with 256 8-bit samples, scaled to the unsigned range `0` to `255`.
 
@@ -308,16 +303,6 @@ With **SW0 enabled**, SW2/SW1 were changed between the four modes while monitori
 ---
 
 ## 6. Reflection
-
-### Challenges and resolutions
-
-- **Understanding VHDL packages and data types:** The sine-table function returns an array of `unsigned` samples, while the output is a `std_logic_vector`. Importing the appropriate package and converting the indexed value with `std_logic_vector(sine_table(addr))` resolved the type mismatch.
-- **Keeping the package names consistent:** The Part I source declares `sine_package`, while Part II declares `wave_package`, even though both filenames are `wave_package.vhd`. Keeping each set of source files together avoids compilation errors.
-- **Separating simulation speed from hardware speed:** Using `SAMPLE_DIV => 1` in the testbench made the 256-sample cycle easy to simulate, while the hardware default of 400 reduced the DAC update rate to 250 ksample/s.
-- **Reading waveform displays:** The Vivado analog-style bus display initially showed misleading slopes at waveform transitions. Adjusting the interpolation display to Hold made the square and zero-output modes easier to interpret without changing the VHDL logic.
-- **Vivado project-directory permissions:** A synthesis attempt reported that a cache directory was not writable. This highlighted the importance of a writable local project directory, particularly when working with cloud-synced folders. The later utilization report showed successful synthesis.
-
-### What I learned
 
 This project connected several digital-design concepts: ROM lookup tables, fixed-width numeric conversion, synchronous counters, periodic address wrapping, combinational waveform logic, multiplexers, clock-rate control, simulation, and FPGA I/O constraints. It also demonstrated the difference between **correct digital samples in simulation** and **observed analog voltage on real hardware**.
 
